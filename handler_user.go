@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"rss/internal/auth"
 	"rss/internal/database"
 	"time"
 
@@ -32,7 +33,23 @@ func (apiCfg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Reques
 		Name:      params.Name,
 	})
 	if err != nil {
-		responseWithError(w, 400, fmt.Sprintf("Error cant create user: ",err))
+		responseWithError(w, 400, fmt.Sprintf("Error cant create user: ", err))
+		return
+	}
+
+	responseWithJson(w, 201, databaseUserToUser(user))
+}
+
+func (apiCfg *apiConfig) handlerGetUser(w http.ResponseWriter, r *http.Request) {
+	apiKey, err := auth.GetAPIKey(r.Header)
+	if err != nil {
+		responseWithError(w, 403, fmt.Sprintf("auth error ", err))
+		return
+	}
+
+	user, err := apiCfg.DB.GetUserByApiKey(r.Context(), apiKey)
+	if err != nil {
+		responseWithError(w, 403, fmt.Sprintf("auth error wrong api key %v", err))
 		return
 	}
 
